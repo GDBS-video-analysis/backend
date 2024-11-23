@@ -1,0 +1,36 @@
+name: Build and push Docker Image and then deploy
+
+on:
+  push:
+    branches: 
+      - "dev"
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+      - name: Log in to Docker Hub
+        run:  echo ${{ secrets.DOCKER_HUB_ACCESS_TOKEN }} | docker login -u ${{ secrets.DOCKER_HUB_USERNAME }} --password-stdin
+      - name: Build
+        run: |
+          cd ./Web
+          docker build -q -t elecshen/gdbs_back:${GITHUB_REF} .
+          docker push -q elecshen/gdbs_back:${GITHUB_REF}
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: install ssh keys
+      run: |
+        install -m 600 -D /dev/null ~/.ssh/id_rsa
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        ssh-keyscan -H ${{ secrets.SSH_HOST }} > ~/.ssh/known_hosts
+    - name: connect and pull
+      run: ssh deployer@${{ secrets.SSH_HOST }} "cd ~/.docker/branches/${GITHUB_REF} && docker compose down && docker compose pull && docker compose up -d && exit"
+    - name: cleanup keys
+      if: always()
+      run: rm -rf ~/.ssh

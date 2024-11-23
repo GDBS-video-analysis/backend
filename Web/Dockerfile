@@ -1,4 +1,5 @@
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+RUN apk --no-cache add curl
 USER app
 WORKDIR /app
 ENV ASPNETCORE_URLS="http://+:80;http://+:5000"

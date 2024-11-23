@@ -1,0 +1,23 @@
+**/.classpath
+**/.dockerignore
+**/.env
+# Git and related
+**/.git
+**/.github
+**/.gitignore
+**/.gitattributes
+
+# Visual studio files and build objects
+**/.vs
+**/bin
+**/obj
+**/*.sln
+
+# Docker and related
+**/docker-compose*
+**/Dockerfile*
+**/.dockerignore
+
+# Other
+**/LICENSE
+**/README.md
