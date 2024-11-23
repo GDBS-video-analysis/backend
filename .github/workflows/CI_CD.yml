@@ -17,8 +17,8 @@ jobs:
       - name: Build
         run: |
           cd ./Web
-          docker build -q -t elecshen/gdbs_back:${GITHUB_REF} .
-          docker push -q elecshen/gdbs_back:${GITHUB_REF}
+          docker build -q -t ${{ secrets.DOCKER_HUB_USERNAME }}/gdbs_back:${GITHUB_REF_NAME} .
+          docker push -q ${{ secrets.DOCKER_HUB_USERNAME }}/gdbs_back:${GITHUB_REF_NAME}
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
@@ -30,7 +30,7 @@ jobs:
         echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
         ssh-keyscan -H ${{ secrets.SSH_HOST }} > ~/.ssh/known_hosts
     - name: connect and pull
-      run: ssh deployer@${{ secrets.SSH_HOST }} "cd ~/.docker/branches/${GITHUB_REF} && docker compose down && docker compose pull && docker compose up -d && exit"
+      run: ssh deployer@${{ secrets.SSH_HOST }} "cd ~/.docker/branches/${GITHUB_REF_NAME} && docker compose down && docker compose pull && docker compose up -d && exit"
     - name: cleanup keys
       if: always()
       run: rm -rf ~/.ssh
