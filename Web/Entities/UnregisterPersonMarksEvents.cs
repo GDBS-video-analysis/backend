@@ -19,6 +19,11 @@ namespace Web.Entities
         [Column("videofile_mark", TypeName = "time without time zone")]
         public TimeOnly VideoFileMark { get; set; }
 
+        [ForeignKey("files")]
+        [Column("videofile_fragment_id")]
+        public long VideoFragmentID { get; set; }
+
+        public virtual MinioFile VideoFragment { get; set; } = null!;
         public virtual Event Event { get; set; } = null!;
         public virtual UnregisterPerson UnregisterPerson { get; set; } = null!;
     }

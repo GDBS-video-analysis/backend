@@ -26,13 +26,14 @@ namespace Web.Entities
         [Column("phone_number", TypeName = "character varying(15)")]
         public string Phone { get; set; } = null!;
 
-        [Column("biometrics", TypeName = "character varying(1024)")]
-        public string Biometrics { get; set; } = null!;
+        //[Column("biometrics", TypeName = "character varying(1024)")]
+        //public string Biometrics { get; set; } = null!;
 
         [Column("is_deleted")]
         public bool IsDeleted { get; set; }
 
         public virtual Post Post { get; set; } = null!;
+        public virtual ICollection<MinioFile> Biometrics { get; set; } = null!;
         public virtual ICollection<Event> ExpectedEvents { get; set; } = new List<Event>();
     }
 }
