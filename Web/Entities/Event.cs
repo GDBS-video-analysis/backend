@@ -19,9 +19,11 @@ namespace Web.Entities
         [Column("description", TypeName = "text")]
         public string? Description { get; set; }
 
-        [Column("videofile", TypeName = "character varying(1024)")]
-        public string Videofile { get; set; } = null!;
+        [ForeignKey("files")]
+        [Column("videofile_id")]
+        public long VideoFileID { get; set; }
 
+        public virtual MinioFile VideoFile { get; set; } = null!;
         public virtual ICollection<Employee> ExpectedEmployees { get; set; } = new List<Employee>();
     }
 }
