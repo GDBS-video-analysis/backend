@@ -12,12 +12,11 @@ namespace Web.DataBaseContext
         public DbSet<Event> Events { get; set; }
         public DbSet<EmployeeMarksEvents> EmployeeMarks { get; set; }
         public DbSet<UnregisterPersonMarksEvents> UnregisterPersonMarks { get; set; }
-        public DbSet<UnregisterPerson> UnregisterPersons { get; set; }
         public DbSet<MinioFile> Files { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=oM65gH&aL!aYmbKH7!Uo");
+            optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=pass");
         }
     }
 }
