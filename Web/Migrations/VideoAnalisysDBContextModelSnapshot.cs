@@ -230,25 +230,6 @@ namespace Web.Migrations
                     b.ToTable("posts");
                 });
 
-            modelBuilder.Entity("Web.Entities.UnregisterPerson", b =>
-                {
-                    b.Property<long>("UnregisterPersonID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint")
-                        .HasColumnName("unregister_person_id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("UnregisterPersonID"));
-
-                    b.Property<string>("Biometrics")
-                        .IsRequired()
-                        .HasColumnType("character varying(1024)")
-                        .HasColumnName("biometrics");
-
-                    b.HasKey("UnregisterPersonID");
-
-                    b.ToTable("unregister_persons");
-                });
-
             modelBuilder.Entity("Web.Entities.UnregisterPersonMarksEvents", b =>
                 {
                     b.Property<long>("EventID")
@@ -256,7 +237,7 @@ namespace Web.Migrations
                         .HasColumnName("event_id");
 
                     b.Property<long>("UnregisterPersonID")
-                        .HasColumnType("bigint")
+                        .HasColumnType("bigserial")
                         .HasColumnName("unregister_person_id");
 
                     b.Property<TimeOnly>("VideoFileMark")
@@ -268,8 +249,6 @@ namespace Web.Migrations
                         .HasColumnName("videofile_fragment_id");
 
                     b.HasIndex("EventID");
-
-                    b.HasIndex("UnregisterPersonID");
 
                     b.HasIndex("VideoFragmentID");
 
@@ -396,12 +375,6 @@ namespace Web.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Web.Entities.UnregisterPerson", "UnregisterPerson")
-                        .WithMany()
-                        .HasForeignKey("UnregisterPersonID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("Web.Entities.MinioFile", "VideoFragment")
                         .WithMany()
                         .HasForeignKey("VideoFragmentID")
@@ -409,8 +382,6 @@ namespace Web.Migrations
                         .IsRequired();
 
                     b.Navigation("Event");
-
-                    b.Navigation("UnregisterPerson");
 
                     b.Navigation("VideoFragment");
                 });

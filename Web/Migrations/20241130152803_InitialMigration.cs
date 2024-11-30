@@ -43,19 +43,6 @@ namespace Web.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "unregister_persons",
-                columns: table => new
-                {
-                    unregister_person_id = table.Column<long>(type: "bigint", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    biometrics = table.Column<string>(type: "character varying(1024)", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_unregister_persons", x => x.unregister_person_id);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "posts",
                 columns: table => new
                 {
@@ -126,7 +113,7 @@ namespace Web.Migrations
                 columns: table => new
                 {
                     event_id = table.Column<long>(type: "bigint", nullable: false),
-                    unregister_person_id = table.Column<long>(type: "bigint", nullable: false),
+                    unregister_person_id = table.Column<long>(type: "bigserial", nullable: false),
                     videofile_mark = table.Column<TimeOnly>(type: "time without time zone", nullable: false),
                     videofile_fragment_id = table.Column<long>(type: "bigint", nullable: false)
                 },
@@ -143,12 +130,6 @@ namespace Web.Migrations
                         column: x => x.videofile_fragment_id,
                         principalTable: "files",
                         principalColumn: "videofile_id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_unregister_person_marks_events_unregister_persons_unregiste~",
-                        column: x => x.unregister_person_id,
-                        principalTable: "unregister_persons",
-                        principalColumn: "unregister_person_id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
@@ -177,7 +158,7 @@ namespace Web.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "expected_employee_events",
+                name: "employee_events",
                 columns: table => new
                 {
                     employee_id = table.Column<long>(type: "bigint", nullable: false),
@@ -185,15 +166,15 @@ namespace Web.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_expected_employee_events", x => new { x.employee_id, x.event_id });
+                    table.PrimaryKey("PK_employee_events", x => new { x.employee_id, x.event_id });
                     table.ForeignKey(
-                        name: "FK_expected_employee_events_employees_employee_id",
+                        name: "FK_employee_events_employees_employee_id",
                         column: x => x.employee_id,
                         principalTable: "employees",
                         principalColumn: "employee_id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_expected_employee_events_events_event_id",
+                        name: "FK_employee_events_events_event_id",
                         column: x => x.event_id,
                         principalTable: "events",
                         principalColumn: "event_id",
@@ -201,24 +182,24 @@ namespace Web.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "employee_biometrics",
+                name: "biometrics_employee",
                 columns: table => new
                 {
-                    biometry_file_id = table.Column<long>(type: "bigint", nullable: false),
+                    biometry_id = table.Column<long>(type: "bigint", nullable: false),
                     employee_id = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_employee_biometrics", x => new { x.biometry_file_id, x.employee_id });
+                    table.PrimaryKey("PK_biometrics_employee", x => new { x.biometry_id, x.employee_id });
                     table.ForeignKey(
-                        name: "FK_employee_biometrics_employees_employee_id",
+                        name: "FK_biometrics_employee_employees_employee_id",
                         column: x => x.employee_id,
                         principalTable: "employees",
                         principalColumn: "employee_id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_employee_biometrics_files_biometry_file_id",
-                        column: x => x.biometry_file_id,
+                        name: "FK_biometrics_employee_files_biometry_id",
+                        column: x => x.biometry_id,
                         principalTable: "files",
                         principalColumn: "videofile_id",
                         onDelete: ReferentialAction.Cascade);
@@ -256,13 +237,13 @@ namespace Web.Migrations
                 column: "event_id");
 
             migrationBuilder.CreateIndex(
-                name: "IX_expected_employee_events_event_id",
-                table: "expected_employee_events",
+                name: "IX_employee_events_event_id",
+                table: "employee_events",
                 column: "event_id");
 
             migrationBuilder.CreateIndex(
-                name: "IX_employee_biometrics_employee_id",
-                table: "employee_biometrics",
+                name: "IX_biometrics_employee_employee_id",
+                table: "biometrics_employee",
                 column: "employee_id");
 
             migrationBuilder.CreateIndex(
@@ -286,11 +267,6 @@ namespace Web.Migrations
                 column: "event_id");
 
             migrationBuilder.CreateIndex(
-                name: "IX_unregister_person_marks_events_unregister_person_id",
-                table: "unregister_person_marks_events",
-                column: "unregister_person_id");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_unregister_person_marks_events_videofile_fragment_id",
                 table: "unregister_person_marks_events",
                 column: "videofile_fragment_id");
@@ -308,10 +284,10 @@ namespace Web.Migrations
                 name: "employee_marks_events");
 
             migrationBuilder.DropTable(
-                name: "expected_employee_events");
+                name: "employee_events");
 
             migrationBuilder.DropTable(
-                name: "employee_biometrics");
+                name: "biometrics_employee");
 
             migrationBuilder.DropTable(
                 name: "unregister_person_marks_events");
@@ -321,9 +297,6 @@ namespace Web.Migrations
 
             migrationBuilder.DropTable(
                 name: "events");
-
-            migrationBuilder.DropTable(
-                name: "unregister_persons");
 
             migrationBuilder.DropTable(
                 name: "employees");
