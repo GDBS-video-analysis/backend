@@ -17,24 +17,33 @@ namespace Web.Controllers
             _dbContext = dbContext;
         }
 
-        public async Task<IActionResult<>>
+        [HttpGet("events")]
+        public async Task<ActionResult<List<EventVM>>> GetEvents()
+        {
+            var Events = await _dbContext
+                .Events
+                .Include(x=>x.VideoFile)
+                .AsNoTracking()
+                .ToListAsync();
 
+            List<EventVM> eventsVM = Events.Select(x => new EventVM().ConvertToEventVM(x)).ToList();
 
-        [HttpPost("AddEvent")]
-        public async Task<IActionResult> AddEvent([FromBody] CreatedEventVM eventVM)
+            return eventsVM;
+        }
+
+        [HttpPost("event")]
+        public async Task<IActionResult> CreateEvent([FromBody] CreatedEventVM eventVM)
         {
             if(eventVM.Name.Length > 127)
             {
                 return BadRequest("Название мероприятия не может быть длинее 127 символов.");
             }
 
-            var dbEvents = await _dbContext.Events.ToListAsync();
-
             Event NewEvent = new()
             {
-                Name = name,
-                DateTime = eventDateTime.ToUniversalTime(),
-                Description = description
+                Name = eventVM.Name,
+                DateTime = eventVM.DateTime.ToUniversalTime(),
+                Description = eventVM.Description
             };
 
             _dbContext.Events.Add(NewEvent);

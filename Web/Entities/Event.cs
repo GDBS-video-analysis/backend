@@ -21,9 +21,9 @@ namespace Web.Entities
 
         [ForeignKey("files")]
         [Column("videofile_id")]
-        public long VideoFileID { get; set; }
+        public long? VideoFileID { get; set; }
 
-        public virtual MinioFile VideoFile { get; set; } = null!;
+        public virtual MinioFile? VideoFile { get; set; } = null!;
         public virtual ICollection<Employee> ExpectedEmployees { get; set; } = new List<Employee>();
     }
 }
