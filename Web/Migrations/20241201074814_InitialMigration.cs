@@ -157,48 +157,48 @@ namespace Web.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "expected_employee_events",
+                name: "EmployeeEvent",
                 columns: table => new
                 {
-                    employee_id = table.Column<long>(type: "bigint", nullable: false),
-                    event_id = table.Column<long>(type: "bigint", nullable: false)
+                    ExpectedEmployeesEmployeeID = table.Column<long>(type: "bigint", nullable: false),
+                    ExpectedEventsEventID = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_expected_employee_events", x => new { x.employee_id, x.event_id });
+                    table.PrimaryKey("PK_EmployeeEvent", x => new { x.ExpectedEmployeesEmployeeID, x.ExpectedEventsEventID });
                     table.ForeignKey(
-                        name: "FK_expected_employee_events_employees_employee_id",
-                        column: x => x.employee_id,
+                        name: "FK_EmployeeEvent_employees_ExpectedEmployeesEmployeeID",
+                        column: x => x.ExpectedEmployeesEmployeeID,
                         principalTable: "employees",
                         principalColumn: "employee_id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_expected_employee_events_events_event_id",
-                        column: x => x.event_id,
+                        name: "FK_EmployeeEvent_events_ExpectedEventsEventID",
+                        column: x => x.ExpectedEventsEventID,
                         principalTable: "events",
                         principalColumn: "event_id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
-                name: "employee_biometrics",
+                name: "EmployeeMinioFile",
                 columns: table => new
                 {
-                    biometry_id = table.Column<long>(type: "bigint", nullable: false),
-                    employee_id = table.Column<long>(type: "bigint", nullable: false)
+                    BiometricsFileID = table.Column<long>(type: "bigint", nullable: false),
+                    EmployeesEmployeeID = table.Column<long>(type: "bigint", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_employee_biometrics", x => new { x.biometry_id, x.employee_id });
+                    table.PrimaryKey("PK_EmployeeMinioFile", x => new { x.BiometricsFileID, x.EmployeesEmployeeID });
                     table.ForeignKey(
-                        name: "FK_employee_biometrics_employees_employee_id",
-                        column: x => x.employee_id,
+                        name: "FK_EmployeeMinioFile_employees_EmployeesEmployeeID",
+                        column: x => x.EmployeesEmployeeID,
                         principalTable: "employees",
                         principalColumn: "employee_id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_employee_biometrics_files_biometry_id",
-                        column: x => x.biometry_id,
+                        name: "FK_EmployeeMinioFile_files_BiometricsFileID",
+                        column: x => x.BiometricsFileID,
                         principalTable: "files",
                         principalColumn: "file_id",
                         onDelete: ReferentialAction.Cascade);
@@ -236,14 +236,14 @@ namespace Web.Migrations
                 column: "event_id");
 
             migrationBuilder.CreateIndex(
-                name: "IX_expected_employee_events_event_id",
-                table: "expected_employee_events",
-                column: "event_id");
+                name: "IX_EmployeeEvent_ExpectedEventsEventID",
+                table: "EmployeeEvent",
+                column: "ExpectedEventsEventID");
 
             migrationBuilder.CreateIndex(
-                name: "IX_employee_biometrics_employee_id",
-                table: "employee_biometrics",
-                column: "employee_id");
+                name: "IX_EmployeeMinioFile_EmployeesEmployeeID",
+                table: "EmployeeMinioFile",
+                column: "EmployeesEmployeeID");
 
             migrationBuilder.CreateIndex(
                 name: "IX_employees_post_id",
@@ -283,10 +283,10 @@ namespace Web.Migrations
                 name: "employee_marks_events");
 
             migrationBuilder.DropTable(
-                name: "expected_employee_events");
+                name: "EmployeeEvent");
 
             migrationBuilder.DropTable(
-                name: "employee_biometrics");
+                name: "EmployeeMinioFile");
 
             migrationBuilder.DropTable(
                 name: "unregister_person_marks_events");

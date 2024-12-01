@@ -12,7 +12,7 @@ using Web.DataBaseContext;
 namespace Web.Migrations
 {
     [DbContext(typeof(VideoAnalisysDBContext))]
-    [Migration("20241201070537_InitialMigration")]
+    [Migration("20241201074814_InitialMigration")]
     partial class InitialMigration
     {
         /// <inheritdoc />

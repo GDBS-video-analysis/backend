@@ -3,7 +3,7 @@
 namespace Web.DTOs
 {
     /// <summary>
-    /// Объект для создания мероприятия
+    /// Объект для создания (редактирования) мероприятия
     /// </summary>
     public class CreatedEventVM
     {
