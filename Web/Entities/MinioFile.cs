@@ -17,7 +17,7 @@ namespace Web.Entities
         public string Name { get; set; } = null!;
 
         [Column("size")]
-        public int Size { get; set; }
+        public long Size { get; set; }
 
         [Column("mimetype", TypeName = "character varying(127)")]
         public string MimeType { get; set; } = null!;
