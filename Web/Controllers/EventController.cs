@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Text.RegularExpressions;
+using Minio;
+using Minio.DataModel.Args;
+using Web.Attributes;
 using Web.DataBaseContext;
 using Web.DTOs;
 using Web.Entities;
@@ -9,13 +11,9 @@ namespace Web.Controllers
 {
     [ApiController]
     [Route("events")]
-    public class EventsController : ControllerBase
+    public class EventsController(VideoAnalisysDBContext dbContext) : ControllerBase
     {
-        private VideoAnalisysDBContext _dbContext;
-        public EventsController(VideoAnalisysDBContext dbContext)
-        {
-            _dbContext = dbContext;
-        }
+        private readonly VideoAnalisysDBContext _dbContext = dbContext;
 
         [HttpGet("events")]
         public async Task<ActionResult<List<EventVM>>> GetEvents()
@@ -74,7 +72,6 @@ namespace Web.Controllers
             editedEvent.DateTime = editedEventVM.DateTime;
             editedEvent.Description = editedEventVM.Description;
 
-            _dbContext.Events.Update(editedEvent);
             await _dbContext.SaveChangesAsync();
 
             return Ok();
@@ -99,9 +96,22 @@ namespace Web.Controllers
             return Ok();
         }
 
+        private const long MaxFileSize = 10L * 1024L * 1024L * 1024L; // 10GB
+        [DisableFormValueModelBinding]
+        [RequestSizeLimit(MaxFileSize)]
+        [RequestFormLimits(MultipartBodyLengthLimit = MaxFileSize)]
         [HttpPost("${eventID}/videoFile")]
-        public async Task<IActionResult> AddVideoFileToEvent(long eventID, long videoFileID)
+        public async Task<IActionResult> AddVideoFileToEvent(long eventID, IFormFile videoFile)
         {
+            if (videoFile == null || videoFile.Length == 0)
+            {
+                return BadRequest("Файл отсутствует или пустой");
+            }
+            if (videoFile.ContentType != "video/mp4")
+            {
+                return BadRequest("Неверный формат файла. Допустимы только видеофайлы в формате MP4");
+            }
+
             var existingEvent = await _dbContext
                 .Events
                 .Include(x=>x.VideoFile)
@@ -117,26 +127,51 @@ namespace Web.Controllers
                 return BadRequest("У мероприятия уже есть видеофайл");
             }
 
-            var existingVideo = await _dbContext
-                .Files
-                .Where(x => x.FileID == videoFileID)
-                .AsNoTracking()
-                .FirstOrDefaultAsync();
+            string endpoint = "localhost:9000";
+            string accessKey = "4XbEZSXIyfHjQYCxJDly";
+            string secretKey = "8Ew2u7rVdyDr9EvP95X4YMQ4A6wS5sQFZUNOj4lB";
+            string bucketName = "bucket1";
 
-            if (existingVideo == null)
+            var minioClient = new MinioClient()
+                .WithEndpoint(endpoint)
+                .WithCredentials(accessKey, secretKey)
+                .Build();
+
+            string filename = $"event{eventID}/{videoFile.FileName}";
+
+            try
             {
-                return NotFound("Видеозапись не найдена");
+                using (var stream = videoFile.OpenReadStream())
+                {
+                    await minioClient.PutObjectAsync(new PutObjectArgs()
+                        .WithBucket(bucketName)
+                        .WithObject(filename)
+                        .WithStreamData(stream)
+                        .WithObjectSize(videoFile.Length)
+                        .WithContentType(videoFile.ContentType));
+                }
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Ошибка при загрузке файла в MinIO: {ex.Message}");
             }
 
-            existingEvent.VideoFile = existingVideo;
+            MinioFile video = new()
+            {
+                Name = videoFile.Name,
+                Size = videoFile.Length,
+                CreatedAt = DateTime.UtcNow,
+                MimeType = videoFile.ContentType,
+                Path = filename
+            };
 
-            _dbContext.Events.Update(existingEvent);
+            existingEvent.VideoFile = video;
             await _dbContext.SaveChangesAsync();
 
             return Ok();
         }
 
-        [HttpPost("${eventID}/expectedEmployees")]
+        [HttpPut("${eventID}/expectedEmployees")]
         public async Task<IActionResult> AddEmployeesToEvent(long eventID, [FromBody] List<long> employees)
         {
             var existingEvent = await _dbContext
@@ -154,40 +189,22 @@ namespace Web.Controllers
             {
                 var existingEmployees = await _dbContext
                     .Employees
+                    .Where(x=> employees.Contains(x.EmployeeID))
                     .AsNoTracking()
                     .ToListAsync();
 
-                if (!employees.All(x => existingEmployees.Select(y => y.EmployeeID).Contains(x)))
+                if (existingEmployees.Count != employees.Count)
                 {
                     return NotFound("Не все работники существуют");
                 }
 
-                //var deletedEmployees = existingEvent
-                //    .ExpectedEmployees
-                //    .Select(x => x.EmployeeID)
-                //    .Except(employees);
-
-                //var addedEmployees = employees
-                //    .Except(existingEvent
-                //    .ExpectedEmployees
-                //    .Select(x => x.EmployeeID));
-
-                //var a = existingEvent.ExpectedEmployees.Select(x => x.EmployeeID).ToList().Remove(deletedEmployees);
-
-                List<Employee> newExpectedEmployees = new();
-                foreach (var employee in employees)
-                {
-                    newExpectedEmployees.Add(existingEmployees.Where(x => x.EmployeeID == employee).First());
-                }
-
-                existingEvent.ExpectedEmployees = newExpectedEmployees;
+                existingEvent.ExpectedEmployees = existingEmployees;
             }
             else
             {
                 existingEvent.ExpectedEmployees.Clear();
             }
 
-            _dbContext.Events.Update(existingEvent);
             await _dbContext.SaveChangesAsync();
 
             return Ok();
