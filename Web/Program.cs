@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore;
+using Web.DataBaseContext;
 
 namespace Web
 {
@@ -14,6 +16,10 @@ namespace Web
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
+            builder.Services.AddDbContext<VideoAnalisysDBContext>(opt =>
+            {
+                opt.UseNpgsql(Environment.GetEnvironmentVariable("DB_CONNECTION_STRING"));
+            });
             builder.Services.AddHealthChecks();
             builder.Services.AddCors();
 
@@ -32,6 +38,11 @@ namespace Web
             app.MapControllers();
             app.MapHealthChecks("/healthz").RequireHost("*:5000");
             app.UseCors(x => x.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
+
+            using (var db = app.Services.CreateScope().ServiceProvider.GetService<VideoAnalisysDBContext>())
+            {
+                db!.Database.Migrate();
+            }
 
             app.Run();
         }

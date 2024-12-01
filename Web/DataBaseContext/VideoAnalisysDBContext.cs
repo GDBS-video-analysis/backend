@@ -3,7 +3,7 @@ using Web.Entities;
 
 namespace Web.DataBaseContext
 {
-    public class VideoAnalisysDBContext : DbContext
+    public class VideoAnalisysDBContext(DbContextOptions<VideoAnalisysDBContext> options) : DbContext(options)
     {
         public DbSet<User> Users { get; set; }
         public DbSet<Employee> Employees { get; set; }
@@ -13,10 +13,6 @@ namespace Web.DataBaseContext
         public DbSet<EmployeeMarksEvents> EmployeeMarks { get; set; }
         public DbSet<UnregisterPersonMarksEvents> UnregisterPersonMarks { get; set; }
         public DbSet<MinioFile> Files { get; set; }
-
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=pass");
-        }
+        
     }
 }
