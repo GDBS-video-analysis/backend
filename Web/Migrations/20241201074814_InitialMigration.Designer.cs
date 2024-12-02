@@ -12,7 +12,7 @@ using Web.DataBaseContext;
 namespace Web.Migrations
 {
     [DbContext(typeof(VideoAnalisysDBContext))]
-    [Migration("20241130152803_InitialMigration")]
+    [Migration("20241201074814_InitialMigration")]
     partial class InitialMigration
     {
         /// <inheritdoc />
@@ -42,13 +42,13 @@ namespace Web.Migrations
 
             modelBuilder.Entity("EmployeeMinioFile", b =>
                 {
-                    b.Property<long>("BiometricsVideoFileID")
+                    b.Property<long>("BiometricsFileID")
                         .HasColumnType("bigint");
 
                     b.Property<long>("EmployeesEmployeeID")
                         .HasColumnType("bigint");
 
-                    b.HasKey("BiometricsVideoFileID", "EmployeesEmployeeID");
+                    b.HasKey("BiometricsFileID", "EmployeesEmployeeID");
 
                     b.HasIndex("EmployeesEmployeeID");
 
@@ -160,7 +160,7 @@ namespace Web.Migrations
                         .HasColumnType("character varying(127)")
                         .HasColumnName("name");
 
-                    b.Property<long>("VideoFileID")
+                    b.Property<long?>("VideoFileID")
                         .HasColumnType("bigint")
                         .HasColumnName("videofile_id");
 
@@ -173,12 +173,12 @@ namespace Web.Migrations
 
             modelBuilder.Entity("Web.Entities.MinioFile", b =>
                 {
-                    b.Property<long>("VideoFileID")
+                    b.Property<long>("FileID")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint")
-                        .HasColumnName("videofile_id");
+                        .HasColumnName("file_id");
 
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("VideoFileID"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("FileID"));
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -203,7 +203,7 @@ namespace Web.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("size");
 
-                    b.HasKey("VideoFileID");
+                    b.HasKey("FileID");
 
                     b.ToTable("files");
                 });
@@ -307,7 +307,7 @@ namespace Web.Migrations
                 {
                     b.HasOne("Web.Entities.MinioFile", null)
                         .WithMany()
-                        .HasForeignKey("BiometricsVideoFileID")
+                        .HasForeignKey("BiometricsFileID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -352,9 +352,7 @@ namespace Web.Migrations
                 {
                     b.HasOne("Web.Entities.MinioFile", "VideoFile")
                         .WithMany()
-                        .HasForeignKey("VideoFileID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("VideoFileID");
 
                     b.Navigation("VideoFile");
                 });

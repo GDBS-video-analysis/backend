@@ -7,8 +7,8 @@ namespace Web.Entities
     public class MinioFile
     {
         [Key]
-        [Column("videofile_id")]
-        public long VideoFileID {  get; set; }
+        [Column("file_id")]
+        public long FileID {  get; set; }
 
         [Column("path", TypeName = "character varying(1024)")]
         public string Path { get; set; } = null!;
@@ -17,7 +17,7 @@ namespace Web.Entities
         public string Name { get; set; } = null!;
 
         [Column("size")]
-        public int Size { get; set; }
+        public long Size { get; set; }
 
         [Column("mimetype", TypeName = "character varying(127)")]
         public string MimeType { get; set; } = null!;
