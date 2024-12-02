@@ -127,10 +127,10 @@ namespace Web.Controllers
                 return BadRequest("У мероприятия уже есть видеофайл");
             }
 
-            string endpoint = "localhost:9000";
-            string accessKey = "4XbEZSXIyfHjQYCxJDly";
-            string secretKey = "8Ew2u7rVdyDr9EvP95X4YMQ4A6wS5sQFZUNOj4lB";
-            string bucketName = "bucket1";
+            string endpoint = Environment.GetEnvironmentVariable("MINIO_ENDPOINT")!;
+            string accessKey = Environment.GetEnvironmentVariable("MINIO_ACCESS_KEY")!;
+            string secretKey = Environment.GetEnvironmentVariable("MINIO_SECRET_KEY")!;
+            string bucketName = Environment.GetEnvironmentVariable("MINIO_BUCKET")!;
 
             var minioClient = new MinioClient()
                 .WithEndpoint(endpoint)
@@ -141,15 +141,13 @@ namespace Web.Controllers
 
             try
             {
-                using (var stream = videoFile.OpenReadStream())
-                {
-                    await minioClient.PutObjectAsync(new PutObjectArgs()
-                        .WithBucket(bucketName)
-                        .WithObject(filename)
-                        .WithStreamData(stream)
-                        .WithObjectSize(videoFile.Length)
-                        .WithContentType(videoFile.ContentType));
-                }
+                using var stream = videoFile.OpenReadStream();
+                await minioClient.PutObjectAsync(new PutObjectArgs()
+                    .WithBucket(bucketName)
+                    .WithObject(filename)
+                    .WithStreamData(stream)
+                    .WithObjectSize(videoFile.Length)
+                    .WithContentType(videoFile.ContentType));
             }
             catch (Exception ex)
             {
