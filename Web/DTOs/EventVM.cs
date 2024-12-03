@@ -25,8 +25,6 @@ namespace Web.DTOs
                     FileID = Event.VideoFile.FileID,
                     Name = Event.VideoFile.Name,
                     CreatedAt = Event.VideoFile.CreatedAt,
-                    MimeType = Event.VideoFile.MimeType,
-                    Path = Event.VideoFile.Path,
                     Size = Event.VideoFile.Size
                 };
                 eventVM.VideoFile = videoFileVM;
