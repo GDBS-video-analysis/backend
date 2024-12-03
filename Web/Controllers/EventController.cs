@@ -169,6 +169,54 @@ namespace Web.Controllers
             return Ok();
         }
 
+        [HttpDelete("{eventID}/videoFile")]
+        public async Task<IActionResult> RemoveVideoFileFromEvent(long eventID)
+        {
+            var existingEvent = await _dbContext
+                .Events
+                .Include(x=>x.VideoFile)
+                .Where(x => x.EventID == eventID)
+                .FirstOrDefaultAsync();
+
+            if (existingEvent == null)
+            {
+                return NotFound("Мероприятия не существует");
+            }
+
+            if(existingEvent.VideoFile == null)
+            {
+                return NotFound("У мероприятия нет видеофайла");
+            }
+
+            string endpoint = Environment.GetEnvironmentVariable("MINIO_ENDPOINT")!;
+            string accessKey = Environment.GetEnvironmentVariable("MINIO_ACCESS_KEY")!;
+            string secretKey = Environment.GetEnvironmentVariable("MINIO_SECRET_KEY")!;
+            string bucketName = Environment.GetEnvironmentVariable("MINIO_BUCKET")!;
+
+            var minioClient = new MinioClient()
+                .WithEndpoint(endpoint)
+                .WithCredentials(accessKey, secretKey)
+                .Build();
+
+            string filename = existingEvent.VideoFile.Path;//$"event{eventID}/{existingEvent.VideoFile.Name}";
+
+            try
+            {
+                await minioClient.RemoveObjectAsync(new RemoveObjectArgs()
+                    .WithBucket(bucketName)
+                    .WithObject(filename));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Ошибка при удалении файла из MinIO: {ex.Message}");
+            }
+
+            _dbContext.Files.Remove(existingEvent.VideoFile);
+            await _dbContext.SaveChangesAsync();
+
+            return Ok();
+        }
+
         [HttpPut("${eventID}/expectedEmployees")]
         public async Task<IActionResult> AddEmployeesToEvent(long eventID, [FromBody] List<long> employees)
         {
