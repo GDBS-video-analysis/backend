@@ -185,9 +185,9 @@ namespace Web.Controllers
         {
             var existingEmployee = await _dbContext
                 .Employees
-                .Include(x=>x.Biometrics)
-                .Include(x=>x.Post)
-                .ThenInclude(x=>x.Department)
+                .Include(x => x.Biometrics)
+                .Include(x => x.Post)
+                .ThenInclude(x => x.Department)
                 .FirstOrDefaultAsync(x => x.EmployeeID == employeeID && x.IsDeleted == false);
 
             if (existingEmployee == null)
@@ -211,12 +211,12 @@ namespace Web.Controllers
         }
 
         [HttpGet("{employeeID}")]
-        public async Task<ActionResult<EmployeeVM>> GetEmployee (long employeeID)
+        public async Task<ActionResult<EmployeeVM>> GetEmployee(long employeeID)
         {
             var existingEmployee = await _dbContext
                 .Employees
-                .Include(x=>x.Post)
-                .Include(x=>x.Biometrics)
+                .Include(x => x.Post)
+                .Include(x => x.Biometrics)
                 .FirstOrDefaultAsync(x => x.EmployeeID == employeeID && x.IsDeleted == false);
 
             if (existingEmployee == null)
@@ -304,5 +304,92 @@ namespace Web.Controllers
 
             return Ok();
         }
+
+        [HttpGet("{eventID}/{employeeID}")]
+        public async Task<ActionResult<EmployeeCard>> GetParticipantCard(long eventID, long employeeID)
+        {
+            var existingEvent = await _dbContext
+                .Events
+                .Include(x => x.ExpectedEmployees)
+                .ThenInclude(x => x.Biometrics)
+                .Include(x => x.ExpectedEmployees)
+                .ThenInclude(x => x.Post)
+                .AsNoTracking()
+                .FirstAsync(x => x.EventID == eventID);
+
+            if (existingEvent == null)
+            {
+                return NotFound("Мероприятие не найдено.");
+            }
+
+            var presentEmployee = await _dbContext
+                .EmployeeMarks
+                .Include(x => x.Employee)
+                .ThenInclude(y => y.Biometrics)
+                .Include(x => x.Employee)
+                .ThenInclude(x => x.Post)
+                .Where(x => x.EventID == eventID && x.EmployeeID == employeeID)
+                .ToListAsync();
+
+            if (presentEmployee.Count == 0)
+            {
+                return NotFound("Сотрудник не найден.");
+            }
+
+            EmployeeCard employeeCard = new();
+
+            var employee = presentEmployee.Select(x => x.Employee).First();
+            EmployeeVM employeeVM = new()
+            {
+                EmployeeID = employee.EmployeeID,
+                FirstName = employee.FirstName,
+                LastName = employee.LastName,
+                Phone = employee.Phone,
+                Patronymic = employee.Patronymic,
+                Post = employee.Post.Name,
+                Avatar = employee.Biometrics.Count == 0 ? null : employee.Biometrics.Select(x => x.FileID)?.First(),
+            };
+
+            if (existingEvent.ExpectedEmployees.Select(x => x.EmployeeID).Contains(employee.EmployeeID))
+            {
+                employeeCard.IsPresent = true;
+            }
+            else
+            {
+                employeeCard.IsPresent = false;
+            }
+
+            employeeCard.Employee = employeeVM;
+            employeeCard.VideoMarks = presentEmployee.Select(x => x.VideoFileMark).ToList();
+
+            return Ok(employeeCard);
+        }
+
+        [HttpGet("{eventID}/{uregisterPerson}")]
+        public async Task<ActionResult<UnknownVisitorCard>> GetUnregisterPersonCard(long eventID, long visitorID)
+        {
+            var existingUnregisterPerson = await _dbContext
+                .UnregisterPersonMarks
+                .Include(x=>x.VideoFragment)
+                .Where(x => x.EventID == eventID && x.UnregisterPersonID == visitorID)
+                .ToListAsync();
+
+            if (existingUnregisterPerson.Count == 0)
+            {
+                return NotFound("Незарегистрированный пользователь не найден");
+            }
+
+            UnknownVisitorCard unknownVisitorCard = new()
+            {
+                UnknownVisitorID = eventID
+            };
+            unknownVisitorCard.VideoFileMarks = existingUnregisterPerson.Select(x => new UnknownVisitorVideoFileMarks()
+            {
+                Mark = x.VideoFileMark,
+                PhotoID = x.VideoFragment.FileID
+            }).ToList();
+
+            return Ok(unknownVisitorCard);
+        } 
     }
 }

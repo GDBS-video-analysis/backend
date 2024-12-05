@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Internal;
+using Microsoft.Extensions.Logging;
 using Minio;
 using Minio.DataModel.Args;
 using Web.Attributes;
@@ -16,15 +18,51 @@ namespace Web.Controllers
         private readonly VideoAnalisysDBContext _dbContext = dbContext;
 
         [HttpGet("events")]
-        public async Task<ActionResult<List<EventVM>>> GetEvents()
+        public async Task<ActionResult<List<EventVM>>> GetEvents(int page = 1, int quantityPerPage = 9, string? search = null) //TODO: сделоть погинацио
         {
-            var Events = await _dbContext
-                .Events
-                .Include(x=>x.VideoFile)
+            if (page < 1)
+            {
+                page = 1;
+            }
+
+            var queryEvent = _dbContext.Events.AsQueryable();
+
+            if (search != null)
+            {
+                queryEvent = queryEvent.Where(x => EF.Functions.ILike(x.Name, $"%{search}%"));
+            }
+
+            var eventsCount = await queryEvent.CountAsync();
+
+            if ((page-1)*quantityPerPage >= eventsCount)
+            {
+                page = (int)Math.Ceiling((double)eventsCount/quantityPerPage);
+            }
+
+            var Events = await queryEvent
                 .AsNoTracking()
+                .Skip((page - 1) * quantityPerPage)
+                .Take(quantityPerPage)
                 .ToListAsync();
 
             List<EventVM> eventsVM = Events.Select(x => new EventVM().ConvertToEventVM(x)).ToList();
+
+            foreach(var eventVM in eventsVM)
+            {
+                var presentEmployeesDB = await _dbContext
+                    .EmployeeMarks
+                    .Where(x => x.EventID == eventVM.EventID)
+                    .GroupBy(x => x.EmployeeID)
+                    .Select(x => x.First()).CountAsync();
+
+                var unregisterPersonsDB = await _dbContext
+                    .UnregisterPersonMarks
+                    .Where(x => x.EventID == eventVM.EventID)
+                    .GroupBy(x => x.UnregisterPersonID)
+                    .Select(x => x.First()).CountAsync();
+
+                eventVM.VisitorsCount = presentEmployeesDB + unregisterPersonsDB;
+            }
 
             return Ok(eventsVM);
         }
@@ -32,7 +70,7 @@ namespace Web.Controllers
         [HttpPost("event")]
         public async Task<IActionResult> CreateEvent([FromBody] CreatedEventVM eventVM)
         {
-            if(eventVM.Name.Length > 127)
+            if (eventVM.Name.Length > 127)
             {
                 return BadRequest("Название мероприятия не может быть длинее 127 символов");
             }
@@ -51,7 +89,7 @@ namespace Web.Controllers
         }
 
         [HttpPut("${eventID}")]
-        public async Task<IActionResult> EditEvent(long eventID, [FromBody]CreatedEventVM editedEventVM)
+        public async Task<IActionResult> EditEvent(long eventID, [FromBody] CreatedEventVM editedEventVM)
         {
             if (editedEventVM.Name.Length > 127)
             {
@@ -114,7 +152,7 @@ namespace Web.Controllers
 
             var existingEvent = await _dbContext
                 .Events
-                .Include(x=>x.VideoFile)
+                .Include(x => x.VideoFile)
                 .Where(x => x.EventID == eventID)
                 .FirstOrDefaultAsync();
 
@@ -174,7 +212,7 @@ namespace Web.Controllers
         {
             var existingEvent = await _dbContext
                 .Events
-                .Include(x=>x.VideoFile)
+                .Include(x => x.VideoFile)
                 .Where(x => x.EventID == eventID)
                 .FirstOrDefaultAsync();
 
@@ -183,7 +221,7 @@ namespace Web.Controllers
                 return NotFound("Мероприятия не существует");
             }
 
-            if(existingEvent.VideoFile == null)
+            if (existingEvent.VideoFile == null)
             {
                 return NotFound("У мероприятия нет видеофайла");
             }
@@ -235,7 +273,7 @@ namespace Web.Controllers
             {
                 var existingEmployees = await _dbContext
                     .Employees
-                    .Where(x=> employees.Contains(x.EmployeeID))
+                    .Where(x => employees.Contains(x.EmployeeID))
                     .AsNoTracking()
                     .ToListAsync();
 
@@ -255,6 +293,96 @@ namespace Web.Controllers
 
             return Ok();
 
+        }
+
+        [HttpGet("{eventID}/visitingStatistics")]
+        public async Task<ActionResult<PresentAndAbsentEmployees>> GetVisitingStatistics(long eventID)
+        {
+            var existingEvent = await _dbContext
+                .Events
+                .Include(x => x.ExpectedEmployees)
+                .ThenInclude(x => x.Biometrics)
+                .Include(x=>x.ExpectedEmployees)
+                .ThenInclude(x=>x.Post)
+                .AsNoTracking()
+                .FirstAsync(x => x.EventID == eventID);
+
+            if (existingEvent == null)
+            {
+                return NotFound("Мероприятие не найдено");
+            }
+
+            var presentEmployeesDB = await _dbContext
+                .EmployeeMarks
+                .Include(x => x.Employee)
+                .ThenInclude(y => y.Biometrics)
+                .Include(x=>x.Employee)
+                .ThenInclude(x=>x.Post)
+                .Where(x=>x.EventID == eventID)
+                .GroupBy(x => x.EmployeeID)
+                .Select(x => x.First())
+                .ToListAsync();
+
+            var presentEmployees = presentEmployeesDB.Select(x => x.Employee).ToList();
+
+            List<Employee>? absentEmployees = [];
+            if (presentEmployees.Count != 0)
+            {
+                foreach(var emp in existingEvent.ExpectedEmployees)
+                {
+                    if (!presentEmployees.Select(x=>x.EmployeeID).Contains(emp.EmployeeID))
+                    {
+                        absentEmployees.Add(emp);
+                    }
+                }
+                //var A = presentEmployees.Select(x => x.EmployeeID);
+                //var B = existingEvent.ExpectedEmployees.Select(x=>x.EmployeeID);
+
+                //var C = B.Except(A).ToList();
+
+                //absentEmployees = presentEmployees.Select(x=>x.Employee)
+                //    .Where(x => C.Contains(x.EmployeeID)).ToList();
+
+                //absentEmployees = existingEvent.ExpectedEmployees
+                //    .Where(x => !presentEmployees.Select(x => x.Employee).Contains(x))
+                //    .ToList();
+
+                //var presentEmp = presentEmployees.Select(x => x.Employee);
+                //absentEmployees = existingEvent.ExpectedEmployees.Except(presentEmp).ToList();
+            }
+            else
+            {
+                absentEmployees = existingEvent?.ExpectedEmployees.ToList();
+            }
+
+
+
+            PresentAndAbsentEmployees statistics = new()
+            {
+                PresentEmployees = presentEmployees.Select(x => new EmployeeVM()
+                {
+                    EmployeeID = x.EmployeeID,
+                    FirstName = x.FirstName,
+                    LastName = x.LastName,
+                    Patronymic = x.Patronymic,
+                    Post = x.Post.Name,
+                    Phone = x.Phone,
+                    Avatar = x.Biometrics.Count == 0? null : x.Biometrics.Select(x => x.FileID)?.First(),
+                }).ToList(),
+
+                AbsentEmployees = absentEmployees?.Select(x => new EmployeeVM()
+                {
+                    EmployeeID = x.EmployeeID,
+                    FirstName = x.FirstName,
+                    LastName = x.LastName,
+                    Patronymic = x.Patronymic,
+                    Post = x.Post.Name,
+                    Phone = x.Phone,
+                    Avatar = x.Biometrics.Count == 0 ? null : x.Biometrics.Select(x => x.FileID)?.First(),
+                }).ToList(),
+            };
+
+            return Ok(statistics);
         }
     }
 }
