@@ -274,7 +274,6 @@ namespace Web.Controllers
                 var existingEmployees = await _dbContext
                     .Employees
                     .Where(x => employees.Contains(x.EmployeeID))
-                    .AsNoTracking()
                     .ToListAsync();
 
                 if (existingEmployees.Count != employees.Count)
