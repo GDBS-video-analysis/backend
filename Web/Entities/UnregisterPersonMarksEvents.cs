@@ -5,9 +5,12 @@ using Microsoft.EntityFrameworkCore;
 namespace Web.Entities
 {
     [Table("unregister_person_marks_events")]
-    [Keyless]
     public class UnregisterPersonMarksEvents
     {
+        [Key]
+        [Column("unregister_person_mark_id")]
+        public long UnregisterPersonMarkID { get; set; }
+
         [ForeignKey("events")]
         [Column("event_id")]
         public long EventID { get; set; }

@@ -4,10 +4,11 @@ namespace Web.DTOs
 {
     public class EventVM
     {
+        public long? VisitorsCount { get; set; }
         public long EventID { get; set; }
         public string Name { get; set; } = null!;
         public string? Description { get; set; }
-        public VideoFileVM? VideoFile { get; set; } = null!;
+        public bool VideoFile { get; set; }
 
         public EventVM ConvertToEventVM(Event Event)
         {
@@ -18,16 +19,13 @@ namespace Web.DTOs
                 Description = Event.Description
             };
 
-            if (Event.VideoFile != null)
+            if (Event.VideoFileID != null)
             {
-                VideoFileVM? videoFileVM = new()
-                {
-                    FileID = Event.VideoFile.FileID,
-                    Name = Event.VideoFile.Name,
-                    CreatedAt = Event.VideoFile.CreatedAt,
-                    Size = Event.VideoFile.Size
-                };
-                eventVM.VideoFile = videoFileVM;
+                eventVM.VideoFile = true;
+            }
+            else
+            {
+                eventVM.VideoFile = false;
             }
 
             return eventVM;

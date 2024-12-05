@@ -1,13 +1,16 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
-using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace Web.Entities
 {
     [Table("employee_marks_events")]
-    [Keyless]
     public class EmployeeMarksEvents
     {
+        [Key]
+        [Column("employee_mark_id")]
+        public long EmployeeMarkID { get; set; }
+
         [ForeignKey("events")]
         [Column("event_id")]
         public long EventID { get; set; }
