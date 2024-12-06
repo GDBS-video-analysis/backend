@@ -63,7 +63,7 @@ namespace Web.Controllers
         [RequestSizeLimit(MaxFileSize)]
         [RequestFormLimits(MultipartBodyLengthLimit = MaxFileSize)]
         [HttpPost("${employeeID}/biometry")]
-        public async Task<IActionResult> AddVideoFileToEvent(long employeeID, IFormFile biometry)
+        public async Task<IActionResult> AddBiometryToEmployee(long employeeID, IFormFile biometry)
         {
             if (biometry == null || biometry.Length == 0)
             {
@@ -131,7 +131,7 @@ namespace Web.Controllers
         }
 
         [HttpDelete("{employeeID}/biometry")]
-        public async Task<IActionResult> RemoveVideoFileFromEvent(long employeeID, long biometryID)
+        public async Task<IActionResult> RemoveBiometryFromEmployee(long employeeID, long biometryID)
         {
             var existingEmployee = await _dbContext
                 .Employees
@@ -139,12 +139,21 @@ namespace Web.Controllers
                 .Where(x => x.EmployeeID == employeeID && x.IsDeleted == false)
                 .FirstOrDefaultAsync();
 
+
             if (existingEmployee == null)
             {
                 return NotFound("Сотрудник не найден");
             }
 
+            Console.WriteLine($"existing employee: {existingEmployee.EmployeeID}\n"); //???
+
             var existingFile = existingEmployee.Biometrics.FirstOrDefault(x => x.FileID == biometryID);
+
+            Console.WriteLine("biometrics:::"); //???
+            foreach (var file in existingEmployee.Biometrics)
+            {
+                Console.WriteLine($"biometrics:{file.FileID}"); //???
+            }
 
             if (existingFile == null)
             {
@@ -370,7 +379,7 @@ namespace Web.Controllers
         {
             var existingUnregisterPerson = await _dbContext
                 .UnregisterPersonMarks
-                .Include(x=>x.VideoFragment)
+                .Include(x => x.VideoFragment)
                 .Where(x => x.EventID == eventID && x.UnregisterPersonID == visitorID)
                 .ToListAsync();
 
@@ -390,6 +399,6 @@ namespace Web.Controllers
             }).ToList();
 
             return Ok(unknownVisitorCard);
-        } 
+        }
     }
 }
