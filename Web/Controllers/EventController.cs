@@ -18,7 +18,7 @@ namespace Web.Controllers
         private readonly VideoAnalisysDBContext _dbContext = dbContext;
 
         [HttpGet("events")]
-        public async Task<ActionResult<List<EventVM>>> GetEvents(int page = 1, int quantityPerPage = 9, string? search = null) //TODO: сделоть погинацио
+        public async Task<ActionResult<PaginatedVM<EventVM>>> GetEvents(int page = 1, int quantityPerPage = 9, string? search = null) //TODO: сделоть погинацио
         {
             if (page < 1)
             {
@@ -64,7 +64,14 @@ namespace Web.Controllers
                 eventVM.VisitorsCount = presentEmployeesDB + unregisterPersonsDB;
             }
 
-            return Ok(eventsVM);
+            PaginatedVM<EventVM> paginatedEventsVM = new()
+            {
+                Count = eventsVM.Count,
+                Page = page,
+                Nodes = eventsVM
+            };
+
+            return Ok(paginatedEventsVM);
         }
 
         [HttpPost("event")]
@@ -303,6 +310,7 @@ namespace Web.Controllers
                 .ThenInclude(x => x.Biometrics)
                 .Include(x=>x.ExpectedEmployees)
                 .ThenInclude(x=>x.Post)
+                .ThenInclude(x=>x.Department)
                 .AsNoTracking()
                 .FirstAsync(x => x.EventID == eventID);
 
@@ -317,6 +325,7 @@ namespace Web.Controllers
                 .ThenInclude(y => y.Biometrics)
                 .Include(x=>x.Employee)
                 .ThenInclude(x=>x.Post)
+                .ThenInclude(x=>x.Department)
                 .Where(x=>x.EventID == eventID)
                 .GroupBy(x => x.EmployeeID)
                 .Select(x => x.First())
@@ -334,20 +343,6 @@ namespace Web.Controllers
                         absentEmployees.Add(emp);
                     }
                 }
-                //var A = presentEmployees.Select(x => x.EmployeeID);
-                //var B = existingEvent.ExpectedEmployees.Select(x=>x.EmployeeID);
-
-                //var C = B.Except(A).ToList();
-
-                //absentEmployees = presentEmployees.Select(x=>x.Employee)
-                //    .Where(x => C.Contains(x.EmployeeID)).ToList();
-
-                //absentEmployees = existingEvent.ExpectedEmployees
-                //    .Where(x => !presentEmployees.Select(x => x.Employee).Contains(x))
-                //    .ToList();
-
-                //var presentEmp = presentEmployees.Select(x => x.Employee);
-                //absentEmployees = existingEvent.ExpectedEmployees.Except(presentEmp).ToList();
             }
             else
             {
@@ -365,8 +360,9 @@ namespace Web.Controllers
                     LastName = x.LastName,
                     Patronymic = x.Patronymic,
                     Post = x.Post.Name,
+                    Department = x.Post.Department.Name,
                     Phone = x.Phone,
-                    Avatar = x.Biometrics.Count == 0? null : x.Biometrics.Select(x => x.FileID)?.First(),
+                    AvatarID = x.Biometrics.Count == 0? null : x.Biometrics.Select(x => x.FileID)?.First(),
                 }).ToList(),
 
                 AbsentEmployees = absentEmployees?.Select(x => new EmployeeVM()
@@ -376,8 +372,9 @@ namespace Web.Controllers
                     LastName = x.LastName,
                     Patronymic = x.Patronymic,
                     Post = x.Post.Name,
+                    Department = x.Post.Department.Name,
                     Phone = x.Phone,
-                    Avatar = x.Biometrics.Count == 0 ? null : x.Biometrics.Select(x => x.FileID)?.First(),
+                    AvatarID = x.Biometrics.Count == 0 ? null : x.Biometrics.Select(x => x.FileID)?.First(),
                 }).ToList(),
             };
 

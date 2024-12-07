@@ -6,6 +6,7 @@ using Web.Attributes;
 using Web.DataBaseContext;
 using Web.DTOs;
 using Web.Entities;
+using Microsoft.Extensions.Logging;
 
 namespace Web.Controllers
 {
@@ -14,6 +15,65 @@ namespace Web.Controllers
     public class EmployeesController(VideoAnalisysDBContext dbContext) : ControllerBase
     {
         private readonly VideoAnalisysDBContext _dbContext = dbContext;
+
+        [HttpGet("employees")]
+        public async Task<ActionResult<PaginatedVM<EmployeeVM>>> GetEmployees(
+            int page = 1, int quantityPerPage = 9,
+            string? searchName = null, string? searchPost = null,
+            string? searchDepartment = null)
+        {
+            if (page < 1)
+            {
+                page = 1;
+            }
+
+            var queryEmployee = _dbContext
+                .Employees
+                .Include(x=>x.Biometrics)
+                .Include(x=>x.Post)
+                .ThenInclude(x=>x.Department)
+                .AsQueryable();
+
+            if (searchName != null)
+            {
+                queryEmployee = queryEmployee.Where(x => 
+                EF.Functions.ILike(x.FirstName, $"%{searchName}%")
+                ||
+                EF.Functions.ILike(x.LastName, $"%{searchName}%"));
+            }
+            if (searchPost != null)
+            {
+                queryEmployee = queryEmployee.Where(x => EF.Functions.ILike(x.Post.Name, $"%{searchPost}%"));
+            }
+            if (searchDepartment != null)
+            {
+                queryEmployee = queryEmployee.Where(x => EF.Functions.ILike(x.Post.Department.Name, $"%{searchDepartment}%"));
+            }
+
+            var employeeCount = await queryEmployee.CountAsync();
+
+            if ((page - 1) * quantityPerPage >= employeeCount)
+            {
+                page = (int)Math.Ceiling((double)employeeCount / quantityPerPage);
+            }
+
+            var Employees = await queryEmployee
+                .AsNoTracking()
+                .Skip((page - 1) * quantityPerPage)
+                .Take(quantityPerPage)
+                .ToListAsync();
+
+            List<EmployeeVM> employeesVM = Employees.Select(x => new EmployeeVM().ConvertToEmployeeVM(x)).ToList();
+
+            PaginatedVM<EmployeeVM> paginatedEmployeesVM = new()
+            {
+                Count = employeesVM.Count,
+                Page = page,
+                Nodes = employeesVM
+            };
+
+            return Ok(paginatedEmployeesVM);
+        }
 
         [HttpPost("employee")]
         public async Task<IActionResult> CreateEmployee([FromBody] CreatedEmployeeVM createdEmployee)
@@ -145,15 +205,7 @@ namespace Web.Controllers
                 return NotFound("Сотрудник не найден");
             }
 
-            Console.WriteLine($"existing employee: {existingEmployee.EmployeeID}\n"); //???
-
             var existingFile = existingEmployee.Biometrics.FirstOrDefault(x => x.FileID == biometryID);
-
-            Console.WriteLine("biometrics:::"); //???
-            foreach (var file in existingEmployee.Biometrics)
-            {
-                Console.WriteLine($"biometrics:{file.FileID}"); //???
-            }
 
             if (existingFile == null)
             {
@@ -225,6 +277,7 @@ namespace Web.Controllers
             var existingEmployee = await _dbContext
                 .Employees
                 .Include(x => x.Post)
+                .ThenInclude(x=>x.Department)
                 .Include(x => x.Biometrics)
                 .FirstOrDefaultAsync(x => x.EmployeeID == employeeID && x.IsDeleted == false);
 
@@ -242,8 +295,9 @@ namespace Web.Controllers
                 LastName = existingEmployee.LastName,
                 Patronymic = existingEmployee.Patronymic,
                 Post = existingEmployee.Post.Name,
+                Department = existingEmployee.Post.Department.Name,
                 Phone = existingEmployee.Phone,
-                Avatar = biometryID
+                AvatarID = biometryID
             };
 
             return Ok(employeeVM);
@@ -320,9 +374,6 @@ namespace Web.Controllers
             var existingEvent = await _dbContext
                 .Events
                 .Include(x => x.ExpectedEmployees)
-                .ThenInclude(x => x.Biometrics)
-                .Include(x => x.ExpectedEmployees)
-                .ThenInclude(x => x.Post)
                 .AsNoTracking()
                 .FirstAsync(x => x.EventID == eventID);
 
@@ -337,6 +388,7 @@ namespace Web.Controllers
                 .ThenInclude(y => y.Biometrics)
                 .Include(x => x.Employee)
                 .ThenInclude(x => x.Post)
+                .ThenInclude(x=>x.Department)
                 .Where(x => x.EventID == eventID && x.EmployeeID == employeeID)
                 .ToListAsync();
 
@@ -356,7 +408,8 @@ namespace Web.Controllers
                 Phone = employee.Phone,
                 Patronymic = employee.Patronymic,
                 Post = employee.Post.Name,
-                Avatar = employee.Biometrics.Count == 0 ? null : employee.Biometrics.Select(x => x.FileID)?.First(),
+                Department = employee.Post.Department.Name,
+                AvatarID = employee.Biometrics.Count == 0 ? null : employee.Biometrics.Select(x => x.FileID)?.First(),
             };
 
             if (existingEvent.ExpectedEmployees.Select(x => x.EmployeeID).Contains(employee.EmployeeID))
@@ -374,13 +427,13 @@ namespace Web.Controllers
             return Ok(employeeCard);
         }
 
-        [HttpGet("{eventID}/{uregisterPerson}")]
-        public async Task<ActionResult<UnknownVisitorCard>> GetUnregisterPersonCard(long eventID, long visitorID)
+        [HttpGet("{eventID}/unregisterPerson/{unregisterPersonID}")]
+        public async Task<ActionResult<InregisterPersonCard>> GetUnregisterPersonCard(long eventID, long unregisterPersonID)
         {
             var existingUnregisterPerson = await _dbContext
                 .UnregisterPersonMarks
                 .Include(x => x.VideoFragment)
-                .Where(x => x.EventID == eventID && x.UnregisterPersonID == visitorID)
+                .Where(x => x.EventID == eventID && x.UnregisterPersonID == unregisterPersonID)
                 .ToListAsync();
 
             if (existingUnregisterPerson.Count == 0)
@@ -388,17 +441,79 @@ namespace Web.Controllers
                 return NotFound("Незарегистрированный пользователь не найден");
             }
 
-            UnknownVisitorCard unknownVisitorCard = new()
+            InregisterPersonCard unknownVisitorCard = new()
             {
-                UnknownVisitorID = eventID
+                UnregisterPersonID = eventID
             };
-            unknownVisitorCard.VideoFileMarks = existingUnregisterPerson.Select(x => new UnknownVisitorVideoFileMarks()
+            unknownVisitorCard.VideoFileMarks = existingUnregisterPerson.Select(x => new UnregisterPersonVideoFileMarks()
             {
                 Mark = x.VideoFileMark,
                 PhotoID = x.VideoFragment.FileID
             }).ToList();
 
             return Ok(unknownVisitorCard);
+        }
+
+        [HttpGet("{employeeID}/visitHistory")]
+        public async Task<ActionResult<List<EventVM>>> GetEmployeeVisitHistory(long employeeID)
+        {
+            var eventsEmployee = await _dbContext
+                .EmployeeMarks
+                .Include(x => x.Event)
+                .Include(x => x.Employee)
+                .Where(x => x.EmployeeID ==employeeID)
+                .GroupBy(x => x.EmployeeID)
+                .Select(x => x.First())
+                .ToListAsync();
+
+            var events = eventsEmployee.Select(x => x.Event).ToList();
+
+            List<EventVM> eventsVM = [];
+            if (events.Count != 0) {
+                eventsVM = events.Select(x => new EventVM().ConvertToEventVM(x)).ToList();
+            }
+
+            return eventsVM;
+        }
+
+        [HttpGet("postsByDepartments")]
+        public async Task<ActionResult<List<DepartmentVM>>> GetDepartmentsWithPosts()
+        {
+            var departments = await _dbContext
+                .Departments
+                .AsNoTracking()
+                .ToListAsync();
+
+            var posts = await _dbContext
+                .Posts
+                .AsNoTracking()
+                .ToListAsync();
+
+            if (departments.Count == 0)
+            {
+                return NotFound("Отделы не найдены");
+            }
+
+            List<DepartmentVM> departmentsVM = [];
+            List<PostVM> postsInDep = [];
+
+            foreach (var dep in departments)
+            {
+                postsInDep = posts.Where(x => x.DepartmentID == dep.DepartmentID).Select(x => new PostVM()
+                {
+                    PostID = x.PostID,
+                    Name = x.Name,
+                }).ToList();
+
+                departmentsVM.Add(new DepartmentVM()
+                {
+                    DepartmentID = dep.DepartmentID,
+                    Name = dep.Name,
+                    Posts = postsInDep
+                });
+            }
+
+            return Ok(departmentsVM);
         }
     }
 }
