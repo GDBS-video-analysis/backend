@@ -1,0 +1,37 @@
+﻿using Web.Entities;
+
+namespace Web.DTOs
+{
+    public class CurrentEventVM
+    {
+        public long EventID { get; set; }
+        public string Name { get; set; } = null!;
+        public DateTime DateTime { get; set; }
+        public string? Description { get; set; }
+        public VideoFileVM? VideoFile { get; set; }
+
+        public CurrentEventVM ConvertToCurrentEventVM(Event DBevent)
+        {
+            CurrentEventVM eventVM = new()
+            {
+                EventID = DBevent.EventID,
+                DateTime = DBevent.DateTime,
+                Description = DBevent.Description,
+                Name = DBevent.Name
+            };
+
+            if (DBevent.VideoFile != null)
+            {
+                eventVM.VideoFile = new VideoFileVM()
+                {
+                    FileID = DBevent.VideoFile.FileID,
+                    CreatedAt = DBevent.VideoFile.CreatedAt,
+                    Name = DBevent.VideoFile.Name,
+                    Size = DBevent.VideoFile.Size,
+                };
+            }
+
+            return eventVM;
+        }
+    }
+}
