@@ -7,6 +7,7 @@ namespace Web.DTOs
         public long? VisitorsCount { get; set; }
         public long EventID { get; set; }
         public string Name { get; set; } = null!;
+        public DateTime DateTime { get; set; }
         public string? Description { get; set; }
         public bool VideoFile { get; set; }
 
@@ -16,7 +17,8 @@ namespace Web.DTOs
             {
                 EventID = Event.EventID,
                 Name = Event.Name,
-                Description = Event.Description
+                Description = Event.Description,
+                DateTime = Event.DateTime,
             };
 
             if (Event.VideoFileID != null)
