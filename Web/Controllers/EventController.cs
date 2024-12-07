@@ -1,7 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Internal;
-using Microsoft.Extensions.Logging;
 using Minio;
 using Minio.DataModel.Args;
 using Web.Attributes;
@@ -66,7 +64,7 @@ namespace Web.Controllers
 
             PaginatedVM<EventVM> paginatedEventsVM = new()
             {
-                Count = eventsVM.Count,
+                Count = eventsCount,
                 Page = page,
                 Nodes = eventsVM
             };
@@ -219,7 +217,7 @@ namespace Web.Controllers
 
             MinioFile video = new()
             {
-                Name = videoFile.Name,
+                Name = videoFile.FileName,
                 Size = videoFile.Length,
                 CreatedAt = DateTime.UtcNow,
                 MimeType = videoFile.ContentType,
