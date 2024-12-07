@@ -72,6 +72,24 @@ namespace Web.Controllers
             return Ok(paginatedEventsVM);
         }
 
+        [HttpGet("{eventID}")]
+        public async Task<ActionResult<CurrentEventVM>> GetEvent(long eventID)
+        {
+            var existingEvent = await _dbContext
+                .Events
+                .Include(x=>x.VideoFile)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.EventID == eventID);
+
+            if (existingEvent == null)
+            {
+                return NotFound("Мероприятие не найдено");
+            }
+
+            CurrentEventVM eventVM = new CurrentEventVM().ConvertToCurrentEventVM(existingEvent);
+            return eventVM;
+        }
+
         [HttpPost("event")]
         public async Task<IActionResult> CreateEvent([FromBody] CreatedEventVM eventVM)
         {
