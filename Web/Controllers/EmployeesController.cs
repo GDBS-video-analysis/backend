@@ -1,12 +1,11 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Minio.DataModel.Args;
 using Minio;
+using Minio.DataModel.Args;
 using Web.Attributes;
 using Web.DataBaseContext;
 using Web.DTOs;
 using Web.Entities;
-using Microsoft.Extensions.Logging;
 
 namespace Web.Controllers
 {
@@ -67,7 +66,7 @@ namespace Web.Controllers
 
             PaginatedVM<EmployeeVM> paginatedEmployeesVM = new()
             {
-                Count = employeesVM.Count,
+                Count = employeeCount,
                 Page = page,
                 Nodes = employeesVM
             };
@@ -177,7 +176,7 @@ namespace Web.Controllers
 
             MinioFile file = new()
             {
-                Name = biometry.Name,
+                Name = biometry.FileName,
                 Size = biometry.Length,
                 CreatedAt = DateTime.UtcNow,
                 MimeType = biometry.ContentType,
