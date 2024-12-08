@@ -11,7 +11,7 @@ namespace Web.DTOs
         public VideoFileVM? VideoFile { get; set; }
         public List<EmployeeVM> ExpectedEmployees { get; set; } = [];
 
-        public CurrentEventVM ConvertToCurrentEventVM(Event DBevent)
+        public CurrentEventVM ConvertToCurrentEventVM(Event DBevent, short? status)
         {
             CurrentEventVM eventVM = new()
             {
@@ -29,6 +29,7 @@ namespace Web.DTOs
                     CreatedAt = DBevent.VideoFile.CreatedAt,
                     Name = DBevent.VideoFile.Name,
                     Size = DBevent.VideoFile.Size,
+                    AnalisysStatus = status
                 };
             }
 

@@ -6,5 +6,6 @@
         public string Name { get; set; } = null!;
         public long Size { get; set; }
         public DateTime CreatedAt { get; set; }
+        public short? AnalisysStatus { get; set; }
     }
 }

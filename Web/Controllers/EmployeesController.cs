@@ -469,7 +469,7 @@ namespace Web.Controllers
 
             List<EventVM> eventsVM = [];
             if (events.Count != 0) {
-                eventsVM = events.Select(x => new EventVM().ConvertToEventVM(x)).ToList();
+                eventsVM = events.Select(x => new EventVM().ConvertToEventVM(x, null)).ToList();
             }
 
             return eventsVM;
