@@ -9,6 +9,7 @@ namespace Web.DTOs
         public DateTime DateTime { get; set; }
         public string? Description { get; set; }
         public VideoFileVM? VideoFile { get; set; }
+        public List<EmployeeVM> ExpectedEmployees { get; set; } = [];
 
         public CurrentEventVM ConvertToCurrentEventVM(Event DBevent)
         {
@@ -30,6 +31,13 @@ namespace Web.DTOs
                     Size = DBevent.VideoFile.Size,
                 };
             }
+
+            if (DBevent.ExpectedEmployees.Count != 0)
+            {
+                eventVM.ExpectedEmployees = DBevent.ExpectedEmployees
+                    .Select(x => new EmployeeVM()
+                    .ConvertToEmployeeVM(x)).ToList();
+            };
 
             return eventVM;
         }

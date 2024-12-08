@@ -77,6 +77,11 @@ namespace Web.Controllers
         {
             var existingEvent = await _dbContext
                 .Events
+                .Include(x=>x.ExpectedEmployees)
+                .ThenInclude(x=>x.Post)
+                .ThenInclude(x=>x.Department)
+                .Include(x=>x.ExpectedEmployees)
+                .ThenInclude(x=>x.Biometrics)
                 .Include(x=>x.VideoFile)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.EventID == eventID);
