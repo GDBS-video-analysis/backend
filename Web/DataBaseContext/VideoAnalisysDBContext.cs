@@ -13,6 +13,7 @@ namespace Web.DataBaseContext
         public DbSet<EmployeeMarksEvents> EmployeeMarks { get; set; }
         public DbSet<UnregisterPersonMarksEvents> UnregisterPersonMarks { get; set; }
         public DbSet<MinioFile> Files { get; set; }
+        public DbSet<VideoAnalisysStatus> VideoAnalisysStatuses { get; set; }
         
     }
 }

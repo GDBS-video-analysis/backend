@@ -23,7 +23,7 @@ namespace Web.Controllers
                 page = 1;
             }
 
-            var queryEvent = _dbContext.Events.AsQueryable();
+            var queryEvent = _dbContext.Events.Include(x=>x.VideoFile).AsQueryable();
 
             if (search != null)
             {
@@ -43,10 +43,24 @@ namespace Web.Controllers
                 .Take(quantityPerPage)
                 .ToListAsync();
 
-            List<EventVM> eventsVM = Events.Select(x => new EventVM().ConvertToEventVM(x)).ToList();
+            short? status = null;
+
+            List<EventVM> eventsVM = Events.Select(x => new EventVM().ConvertToEventVM(x, null)).ToList();
 
             foreach(var eventVM in eventsVM)
             {
+                if (eventVM.VideoFile)
+                {
+                    var analStatus = await _dbContext
+                        .VideoAnalisysStatuses
+                        .FirstOrDefaultAsync(x => x.EventID == eventVM.EventID);
+
+                    if (analStatus != null)
+                    {
+                        status = analStatus.Status;
+                    }
+                }
+
                 var presentEmployeesDB = await _dbContext
                     .EmployeeMarks
                     .Where(x => x.EventID == eventVM.EventID)
@@ -91,7 +105,22 @@ namespace Web.Controllers
                 return NotFound("Мероприятие не найдено");
             }
 
-            CurrentEventVM eventVM = new CurrentEventVM().ConvertToCurrentEventVM(existingEvent);
+            short? status = null;
+            if (existingEvent.VideoFile != null)
+            {
+                var analStatus = await _dbContext
+                    .VideoAnalisysStatuses
+                    .FirstOrDefaultAsync(x => 
+                        x.VideoFileID == existingEvent.VideoFileID 
+                        && 
+                        x.EventID == existingEvent.EventID);
+                if (analStatus != null) 
+                {
+                    status = analStatus.Status;
+                }
+            }
+
+            CurrentEventVM eventVM = new CurrentEventVM().ConvertToCurrentEventVM(existingEvent, status);
             return eventVM;
         }
 

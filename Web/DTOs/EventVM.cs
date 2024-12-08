@@ -10,8 +10,9 @@ namespace Web.DTOs
         public DateTime DateTime { get; set; }
         public string? Description { get; set; }
         public bool VideoFile { get; set; }
+        public short? AnalisysStatus { get; set; }
 
-        public EventVM ConvertToEventVM(Event Event)
+        public EventVM ConvertToEventVM(Event Event, short? status)
         {
             EventVM eventVM = new()
             {
@@ -24,6 +25,7 @@ namespace Web.DTOs
             if (Event.VideoFileID != null)
             {
                 eventVM.VideoFile = true;
+                //eventVM.AnalisysStatus = status;
             }
             else
             {
