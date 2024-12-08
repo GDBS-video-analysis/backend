@@ -25,7 +25,7 @@ namespace Web.DTOs
             if (Event.VideoFileID != null)
             {
                 eventVM.VideoFile = true;
-                //eventVM.AnalisysStatus = status;
+                eventVM.AnalisysStatus = status;
             }
             else
             {

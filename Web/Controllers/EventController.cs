@@ -23,7 +23,7 @@ namespace Web.Controllers
                 page = 1;
             }
 
-            var queryEvent = _dbContext.Events.Include(x=>x.VideoFile).AsQueryable();
+            var queryEvent = _dbContext.Events.AsQueryable();
 
             if (search != null)
             {
@@ -39,27 +39,20 @@ namespace Web.Controllers
 
             var Events = await queryEvent
                 .AsNoTracking()
+                .Include(x=>x.VideoAnalisysStatus)
                 .Skip((page - 1) * quantityPerPage)
                 .Take(quantityPerPage)
                 .ToListAsync();
 
             short? status = null;
 
-            List<EventVM> eventsVM = Events.Select(x => new EventVM().ConvertToEventVM(x, null)).ToList();
+            List<EventVM> eventsVM = [];
 
-            foreach(var eventVM in eventsVM)
+            foreach(var eventDB in Events)
             {
-                if (eventVM.VideoFile)
-                {
-                    var analStatus = await _dbContext
-                        .VideoAnalisysStatuses
-                        .FirstOrDefaultAsync(x => x.EventID == eventVM.EventID);
+                status = eventDB.VideoAnalisysStatus?.FirstOrDefault(x => x.VideoFileID == eventDB.VideoFileID)?.Status;
 
-                    if (analStatus != null)
-                    {
-                        status = analStatus.Status;
-                    }
-                }
+                EventVM eventVM = new EventVM().ConvertToEventVM(eventDB, status);
 
                 var presentEmployeesDB = await _dbContext
                     .EmployeeMarks
@@ -74,6 +67,8 @@ namespace Web.Controllers
                     .Select(x => x.First()).CountAsync();
 
                 eventVM.VisitorsCount = presentEmployeesDB + unregisterPersonsDB;
+
+                eventsVM.Add(eventVM);
             }
 
             PaginatedVM<EventVM> paginatedEventsVM = new()
@@ -96,7 +91,7 @@ namespace Web.Controllers
                 .ThenInclude(x=>x.Department)
                 .Include(x=>x.ExpectedEmployees)
                 .ThenInclude(x=>x.Biometrics)
-                .Include(x=>x.VideoFile)
+                //.Include(x=>x.VideoFile)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.EventID == eventID);
 
@@ -106,7 +101,7 @@ namespace Web.Controllers
             }
 
             short? status = null;
-            if (existingEvent.VideoFile != null)
+            if (existingEvent.VideoFileID != null)
             {
                 var analStatus = await _dbContext
                     .VideoAnalisysStatuses
