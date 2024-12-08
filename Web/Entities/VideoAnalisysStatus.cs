@@ -20,8 +20,5 @@ namespace Web.Entities
 
         [Column("status")]
         public short Status { get; set; } // 0 = в обработке, 1 = обработалось, 2 = ошибка
-
-        public virtual MinioFile VideoFile { get; set; } = null!;
-        public virtual Event Event { get; set; } = null!;
     }
 }

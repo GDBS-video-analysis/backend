@@ -25,5 +25,6 @@ namespace Web.Entities
 
         public virtual MinioFile? VideoFile { get; set; } = null!;
         public virtual ICollection<Employee> ExpectedEmployees { get; set; } = new List<Employee>();
+        public virtual ICollection<VideoAnalisysStatus>? VideoAnalisysStatus { get; set; }
     }
 }
