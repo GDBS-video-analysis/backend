@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Web.DataBaseContext;
@@ -11,9 +12,11 @@ using Web.DataBaseContext;
 namespace Web.Migrations
 {
     [DbContext(typeof(VideoAnalisysDBContext))]
-    partial class VideoAnalisysDBContextModelSnapshot : ModelSnapshot
+    [Migration("20241209141414_time-to")]
+    partial class timeto
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -130,10 +133,6 @@ namespace Web.Migrations
                     b.Property<long>("EventID")
                         .HasColumnType("bigint")
                         .HasColumnName("event_id");
-
-                    b.Property<DateTime>("VideoFileMark")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("videofile_mark");
 
                     b.HasKey("EmployeeMarkID");
 
@@ -255,10 +254,6 @@ namespace Web.Migrations
                     b.Property<long>("UnregisterPersonID")
                         .HasColumnType("bigserial")
                         .HasColumnName("unregister_person_id");
-
-                    b.Property<DateTime>("VideoFileMark")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("videofile_mark");
 
                     b.Property<long>("VideoFragmentID")
                         .HasColumnType("bigint")

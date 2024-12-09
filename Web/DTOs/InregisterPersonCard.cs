@@ -8,7 +8,7 @@
 
     public class UnregisterPersonVideoFileMarks
     {
-        public TimeOnly Mark { get; set; }
+        public DateTime Mark { get; set; }
         public long PhotoID { get; set; }
     }
 }

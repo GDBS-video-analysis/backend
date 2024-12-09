@@ -19,8 +19,8 @@ namespace Web.Entities
         [Column("unregister_person_id", TypeName = "bigserial")]
         public long UnregisterPersonID { get; set; }
 
-        [Column("videofile_mark", TypeName = "time without time zone")]
-        public TimeOnly VideoFileMark { get; set; }
+        [Column("videofile_mark", TypeName = "timestamp with time zone")]
+        public DateTime VideoFileMark { get; set; }
 
         [ForeignKey("files")]
         [Column("videofile_fragment_id")]

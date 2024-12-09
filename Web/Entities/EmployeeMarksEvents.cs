@@ -19,8 +19,8 @@ namespace Web.Entities
         [Column("employee_id")]
         public long EmployeeID { get; set; }
 
-        [Column("videofile_mark", TypeName = "time without time zone")]
-        public TimeOnly VideoFileMark { get; set; }
+        [Column("videofile_mark", TypeName = "timestamp with time zone")]
+        public DateTime VideoFileMark { get; set; }
 
         public virtual Event Event { get; set; } = null!;
         public virtual Employee Employee { get; set; } = null!;
