@@ -4,6 +4,6 @@
     {
         public bool IsPresent { get; set; }
         public EmployeeVM Employee { get; set; } = new();
-        public List<TimeOnly> VideoMarks { get; set; } = [];
+        public List<DateTime> VideoMarks { get; set; } = [];
     }
 }
