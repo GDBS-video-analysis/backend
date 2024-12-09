@@ -461,7 +461,7 @@ namespace Web.Controllers
                 .Include(x => x.Event)
                 .Include(x => x.Employee)
                 .Where(x => x.EmployeeID ==employeeID)
-                .GroupBy(x => x.EmployeeID)
+                .GroupBy(x => x.EventID)
                 .Select(x => x.First())
                 .ToListAsync();
 
