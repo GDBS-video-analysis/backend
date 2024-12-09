@@ -91,7 +91,7 @@ namespace Web.Controllers
                 .ThenInclude(x=>x.Department)
                 .Include(x=>x.ExpectedEmployees)
                 .ThenInclude(x=>x.Biometrics)
-                //.Include(x=>x.VideoFile)
+                .Include(x=>x.VideoFile)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.EventID == eventID);
 
