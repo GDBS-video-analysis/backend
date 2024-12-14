@@ -371,8 +371,6 @@ namespace Web.Controllers
                 .Include(x=>x.Employee)
                 .ThenInclude(x=>x.Post)
                 .ThenInclude(x=>x.Department)
-                .Include(x=>x.Employee) //////////// для выборки запланированных и незапланированных...
-                .ThenInclude(x=>x.ExpectedEvents) // ...сотрудников на мероприятии
                 .Where(x=>x.EventID == eventID)
                 .GroupBy(x => x.EmployeeID)
                 .Select(x => x.First())
@@ -386,6 +384,7 @@ namespace Web.Controllers
             List<Employee>? expectedEmployees = []; //запланированные сотрудники
             //List<long> unregisterPersons = []; //количество ноунеймов
             ///из тех, кто присутствовал ☻ 
+            List<Employee>? a;
 
             if (presentEmployees.Count != 0)
             {
@@ -395,15 +394,15 @@ namespace Web.Controllers
                     {
                         absentEmployees.Add(emp); //добавление отсутствующих сотрудников
                     }
-
-                    if (presentEmployees.Select(x => x.EmployeeID).Contains(emp.EmployeeID))
+                    else
                     {
                         expectedEmployees.Add(emp); //добавление запланированных сотрудников
                     }
                 }
+
                 foreach(var emp in presentEmployees)
                 {
-                    if (!existingEvent.ExpectedEmployees.Select(x => x.EmployeeID).Contains(emp.EmployeeID))
+                    if (existingEvent.ExpectedEmployees.FirstOrDefault(x=>x.EmployeeID == emp.EmployeeID) == null)
                     {
                         notExpectedEmployees.Add(emp);
                     }
