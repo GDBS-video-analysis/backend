@@ -371,6 +371,8 @@ namespace Web.Controllers
                 .Include(x=>x.Employee)
                 .ThenInclude(x=>x.Post)
                 .ThenInclude(x=>x.Department)
+                .Include(x=>x.Employee) //////////// для выборки запланированных и незапланированных...
+                .ThenInclude(x=>x.ExpectedEvents) // ...сотрудников на мероприятии
                 .Where(x=>x.EventID == eventID)
                 .GroupBy(x => x.EmployeeID)
                 .Select(x => x.First())
@@ -378,14 +380,32 @@ namespace Web.Controllers
 
             var presentEmployees = presentEmployeesDB.Select(x => x.Employee).ToList();
 
-            List<Employee>? absentEmployees = [];
+            List<Employee>? absentEmployees = []; //отсутствовавшие сотрудники
+            ///из тех, кто присутствовал: ↓
+            List<Employee>? notExpectedEmployees = []; //незапланированные сотрудники
+            List<Employee>? expectedEmployees = []; //запланированные сотрудники
+            //List<long> unregisterPersons = []; //количество ноунеймов
+            ///из тех, кто присутствовал ☻ 
+
             if (presentEmployees.Count != 0)
             {
                 foreach(var emp in existingEvent.ExpectedEmployees)
                 {
                     if (!presentEmployees.Select(x=>x.EmployeeID).Contains(emp.EmployeeID))
                     {
-                        absentEmployees.Add(emp);
+                        absentEmployees.Add(emp); //добавление отсутствующих сотрудников
+                    }
+
+                    if (presentEmployees.Select(x => x.EmployeeID).Contains(emp.EmployeeID))
+                    {
+                        expectedEmployees.Add(emp); //добавление запланированных сотрудников
+                    }
+                }
+                foreach(var emp in presentEmployees)
+                {
+                    if (!existingEvent.ExpectedEmployees.Select(x => x.EmployeeID).Contains(emp.EmployeeID))
+                    {
+                        notExpectedEmployees.Add(emp);
                     }
                 }
             }
@@ -394,33 +414,24 @@ namespace Web.Controllers
                 absentEmployees = existingEvent?.ExpectedEmployees.ToList();
             }
 
-
+            var unregisterPersons = await _dbContext
+                .UnregisterPersonMarks
+                .Where(x => x.EventID == eventID)
+                .GroupBy(x => x.UnregisterPersonID)
+                .Select(x => x.First())
+                //.Select(x=>x.UnregisterPersonID)
+                .ToListAsync();
 
             PresentAndAbsentEmployees statistics = new()
             {
-                PresentEmployees = presentEmployees.Select(x => new EmployeeVM()
+                PresentPersons = new()
                 {
-                    EmployeeID = x.EmployeeID,
-                    FirstName = x.FirstName,
-                    LastName = x.LastName,
-                    Patronymic = x.Patronymic,
-                    Post = x.Post.Name,
-                    Department = x.Post.Department.Name,
-                    Phone = x.Phone,
-                    AvatarID = x.Biometrics.Count == 0? null : x.Biometrics.Select(x => x.FileID)?.First(),
-                }).ToList(),
+                    ExpectedEmployees = expectedEmployees.Select(x => new EmployeeVM().ConvertToEmployeeVM(x)).ToList(),
+                    NotExpectedEmployees = notExpectedEmployees.Select(x => new EmployeeVM().ConvertToEmployeeVM(x)).ToList(),
+                    UnregisterPersons = unregisterPersons.Select(x => x.UnregisterPersonID).ToList()
+                },
 
-                AbsentEmployees = absentEmployees?.Select(x => new EmployeeVM()
-                {
-                    EmployeeID = x.EmployeeID,
-                    FirstName = x.FirstName,
-                    LastName = x.LastName,
-                    Patronymic = x.Patronymic,
-                    Post = x.Post.Name,
-                    Department = x.Post.Department.Name,
-                    Phone = x.Phone,
-                    AvatarID = x.Biometrics.Count == 0 ? null : x.Biometrics.Select(x => x.FileID)?.First(),
-                }).ToList(),
+                AbsentEmployees = absentEmployees?.Select(x => new EmployeeVM().ConvertToEmployeeVM(x)).ToList(),
             };
 
             return Ok(statistics);

@@ -51,6 +51,16 @@ namespace Web.Controllers
 
             var employeeCount = await queryEmployee.CountAsync();
 
+            if (employeeCount == 0)
+            {
+                return Ok(new PaginatedVM<EmployeeVM>()
+                {
+                    Count = 0,
+                    Page = 1,
+                    Nodes = []
+                });
+            }
+
             if ((page - 1) * quantityPerPage >= employeeCount)
             {
                 page = (int)Math.Ceiling((double)employeeCount / quantityPerPage);
