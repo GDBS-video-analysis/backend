@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Minio;
 using Minio.DataModel.Args;
+using System.Net;
 using Web.Attributes;
 using Web.DataBaseContext;
 using Web.DTOs;
@@ -32,14 +33,14 @@ namespace Web.Controllers
 
             var eventsCount = await queryEvent.CountAsync();
 
-            if ((page-1)*quantityPerPage >= eventsCount)
+            if ((page - 1) * quantityPerPage >= eventsCount)
             {
-                page = (int)Math.Ceiling((double)eventsCount/quantityPerPage);
+                page = (int)Math.Ceiling((double)eventsCount / quantityPerPage);
             }
 
             var Events = await queryEvent
                 .AsNoTracking()
-                .Include(x=>x.VideoAnalisysStatus)
+                .Include(x => x.VideoAnalisysStatus)
                 .Skip((page - 1) * quantityPerPage)
                 .Take(quantityPerPage)
                 .ToListAsync();
@@ -48,7 +49,7 @@ namespace Web.Controllers
 
             List<EventVM> eventsVM = [];
 
-            foreach(var eventDB in Events)
+            foreach (var eventDB in Events)
             {
                 status = eventDB.VideoAnalisysStatus?.FirstOrDefault(x => x.VideoFileID == eventDB.VideoFileID)?.Status;
 
@@ -86,12 +87,12 @@ namespace Web.Controllers
         {
             var existingEvent = await _dbContext
                 .Events
-                .Include(x=>x.ExpectedEmployees)
-                .ThenInclude(x=>x.Post)
-                .ThenInclude(x=>x.Department)
-                .Include(x=>x.ExpectedEmployees)
-                .ThenInclude(x=>x.Biometrics)
-                .Include(x=>x.VideoFile)
+                .Include(x => x.ExpectedEmployees)
+                .ThenInclude(x => x.Post)
+                .ThenInclude(x => x.Department)
+                .Include(x => x.ExpectedEmployees)
+                .ThenInclude(x => x.Biometrics)
+                .Include(x => x.VideoFile)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.EventID == eventID);
 
@@ -105,11 +106,11 @@ namespace Web.Controllers
             {
                 var analStatus = await _dbContext
                     .VideoAnalisysStatuses
-                    .FirstOrDefaultAsync(x => 
-                        x.VideoFileID == existingEvent.VideoFileID 
-                        && 
+                    .FirstOrDefaultAsync(x =>
+                        x.VideoFileID == existingEvent.VideoFileID
+                        &&
                         x.EventID == existingEvent.EventID);
-                if (analStatus != null) 
+                if (analStatus != null)
                 {
                     status = analStatus.Status;
                 }
@@ -265,6 +266,7 @@ namespace Web.Controllers
             var existingEvent = await _dbContext
                 .Events
                 .Include(x => x.VideoFile)
+                .Include(x=>x.VideoAnalisysStatus)
                 .Where(x => x.EventID == eventID)
                 .FirstOrDefaultAsync();
 
@@ -276,6 +278,18 @@ namespace Web.Controllers
             if (existingEvent.VideoFile == null)
             {
                 return NotFound("У мероприятия нет видеофайла");
+            }
+
+            var eventStatuses = existingEvent.VideoAnalisysStatus?.Select(x => x.Status).ToList();
+
+            if (eventStatuses == null || eventStatuses.Count == 0)
+            {
+                return Problem("Видео не имеет статуса обработки!");
+            }
+
+            if (eventStatuses.Contains(0) || eventStatuses.Contains(1))
+            {
+                return BadRequest("Нельзя удалить видео, когда оно в обработке или в очереди");
             }
 
             string endpoint = Environment.GetEnvironmentVariable("MINIO_ENDPOINT")!;
@@ -300,6 +314,19 @@ namespace Web.Controllers
             {
                 return StatusCode(500, $"Ошибка при удалении файла из MinIO: {ex.Message}");
             }
+
+            var existingEmployeesMarks = await _dbContext
+                .EmployeeMarks
+                .Where(x => x.EventID == eventID)
+                .ToListAsync();
+
+            var existingUnregisterPersonsMarks = await _dbContext
+                .UnregisterPersonMarks
+                .Where(x => x.EventID == eventID)
+                .ToListAsync();
+
+            _dbContext.EmployeeMarks.RemoveRange(existingEmployeesMarks);
+            _dbContext.UnregisterPersonMarks.RemoveRange(existingUnregisterPersonsMarks);
 
             _dbContext.Files.Remove(existingEvent.VideoFile);
             await _dbContext.SaveChangesAsync();
