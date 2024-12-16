@@ -351,8 +351,8 @@ namespace Web.Controllers
             existingEmployee.FirstName = editedEmployee.FirstName;
             existingEmployee.LastName = editedEmployee.LastName;
             existingEmployee.Patronymic = editedEmployee.Patronymic;
-            editedEmployee.PostID = editedEmployee.PostID;
-            editedEmployee.Phone = editedEmployee.Phone;
+            existingEmployee.PostID = editedEmployee.PostID;
+            existingEmployee.Phone = editedEmployee.Phone;
 
             await _dbContext.SaveChangesAsync();
 
