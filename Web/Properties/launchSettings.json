@@ -6,7 +6,8 @@
       "launchUrl": "swagger",
       "environmentVariables": {
         "DB_CONNECTION_STRING": "Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=pass",
-        "MINIO_ENDPOINT": "localhost:9000",
+        "MINIO_ENDPOINT": "localhost:9000",        
+        "ML_ENDPOINT": "http://localhost:9000",
         "MINIO_ACCESS_KEY": "1234",
         "MINIO_SECRET_KEY": "12345678",
         "MINIO_BUCKET": "dev",
