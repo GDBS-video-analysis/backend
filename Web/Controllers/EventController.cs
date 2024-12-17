@@ -186,6 +186,7 @@ namespace Web.Controllers
         {
             var deletedEvent = await _dbContext
                 .Events
+                .Include(x=>x.VideoFile)
                 .Where(x => x.EventID == eventID)
                 .FirstOrDefaultAsync();
 
@@ -194,6 +195,33 @@ namespace Web.Controllers
                 return NotFound("Мероприятие не найдено");
             }
 
+            if (deletedEvent.VideoFile != null)
+            {
+                string endpoint = Environment.GetEnvironmentVariable("MINIO_ENDPOINT")!;
+                string accessKey = Environment.GetEnvironmentVariable("MINIO_ACCESS_KEY")!;
+                string secretKey = Environment.GetEnvironmentVariable("MINIO_SECRET_KEY")!;
+                string bucketName = Environment.GetEnvironmentVariable("MINIO_BUCKET")!;
+
+                var minioClient = new MinioClient()
+                    .WithEndpoint(endpoint)
+                    .WithCredentials(accessKey, secretKey)
+                    .Build();
+
+                var existingEmployeesMarks = await _dbContext
+                    .EmployeeMarks
+                    .Where(x => x.EventID == eventID)
+                    .ToListAsync();
+
+                var existingUnregisterPersonsMarks = await _dbContext
+                    .UnregisterPersonMarks
+                    .Where(x => x.EventID == eventID)
+                    .ToListAsync();
+
+                _dbContext.EmployeeMarks.RemoveRange(existingEmployeesMarks);
+                _dbContext.UnregisterPersonMarks.RemoveRange(existingUnregisterPersonsMarks);
+
+                await DeleteMinioDBFile(deletedEvent, minioClient, bucketName);
+            }
             _dbContext.Events.Remove(deletedEvent);
             await _dbContext.SaveChangesAsync();
 
@@ -275,7 +303,8 @@ namespace Web.Controllers
             var content = JsonContent.Create(new{ event_id = eventID, videofile_id = video.FileID });
 
             HttpClient httpClient = new();
-            var response = await httpClient.PostAsync(new Uri($"{endpoint}/process_event"), content);
+            var a = new Uri($"{endpoint2}/process_event");
+            var response = await httpClient.PostAsync(a, content);
 
             if (!response.IsSuccessStatusCode)
             {
