@@ -33,6 +33,16 @@ namespace Web.Controllers
 
             var eventsCount = await queryEvent.CountAsync();
 
+            if (eventsCount == 0)
+            {
+                return Ok(new PaginatedVM<EventVM>()
+                {
+                    Count = 0,
+                    Page = 1,
+                    Nodes = []
+                });
+            }
+
             if ((page - 1) * quantityPerPage >= eventsCount)
             {
                 page = (int)Math.Ceiling((double)eventsCount / quantityPerPage);
