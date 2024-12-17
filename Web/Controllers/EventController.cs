@@ -304,12 +304,20 @@ namespace Web.Controllers
 
             HttpClient httpClient = new();
             var a = new Uri($"{endpoint2}/process_event");
-            var response = await httpClient.PostAsync(a, content);
 
-            if (!response.IsSuccessStatusCode)
+            try
+            {
+                var response = await httpClient.PostAsync(a, content);
+                if (!response.IsSuccessStatusCode)
+                {
+                    await DeleteMinioDBFile(existingEvent, minioClient, bucketName);
+                    return Problem("бро...");
+                }
+            }
+            catch(Exception ex)
             {
                 await DeleteMinioDBFile(existingEvent, minioClient, bucketName);
-                return Problem("бро...");
+                return BadRequest($"Не удалось отправить запрос в ML для обработки:\n{ex}");
             }
 
             return Ok();
