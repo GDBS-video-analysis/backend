@@ -1,12 +1,15 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Minio;
 using Minio.DataModel.Args;
+using System;
 using System.Net;
 using Web.Attributes;
 using Web.DataBaseContext;
 using Web.DTOs;
 using Web.Entities;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Web.Controllers
 {
@@ -267,6 +270,19 @@ namespace Web.Controllers
             existingEvent.VideoFile = video;
             await _dbContext.SaveChangesAsync();
 
+            string endpoint2 = Environment.GetEnvironmentVariable("ML_ENDPOINT")!;
+
+            var content = JsonContent.Create(new{ event_id = eventID, videofile_id = video.FileID });
+
+            HttpClient httpClient = new();
+            var response = await httpClient.PostAsync(new Uri($"{endpoint}/process_event"), content);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                await DeleteMinioDBFile(existingEvent, minioClient, bucketName);
+                return Problem("бро...");
+            }
+
             return Ok();
         }
 
@@ -312,19 +328,6 @@ namespace Web.Controllers
                 .WithCredentials(accessKey, secretKey)
                 .Build();
 
-            string filename = existingEvent.VideoFile.Path;//$"event{eventID}/{existingEvent.VideoFile.Name}";
-
-            try
-            {
-                await minioClient.RemoveObjectAsync(new RemoveObjectArgs()
-                    .WithBucket(bucketName)
-                    .WithObject(filename));
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Ошибка при удалении файла из MinIO: {ex.Message}");
-            }
-
             var existingEmployeesMarks = await _dbContext
                 .EmployeeMarks
                 .Where(x => x.EventID == eventID)
@@ -338,7 +341,8 @@ namespace Web.Controllers
             _dbContext.EmployeeMarks.RemoveRange(existingEmployeesMarks);
             _dbContext.UnregisterPersonMarks.RemoveRange(existingUnregisterPersonsMarks);
 
-            _dbContext.Files.Remove(existingEvent.VideoFile);
+            await DeleteMinioDBFile(existingEvent, minioClient, bucketName);
+
             await _dbContext.SaveChangesAsync();
 
             return Ok();
@@ -471,6 +475,18 @@ namespace Web.Controllers
             };
 
             return Ok(statistics);
+        }
+
+        private async Task DeleteMinioDBFile(Event existingEvent, IMinioClient minioClient, string bucketName) 
+        {
+            string filename = existingEvent.VideoFile!.Path;
+
+            await minioClient.RemoveObjectAsync(new RemoveObjectArgs()
+                .WithBucket(bucketName)
+                .WithObject(filename));
+
+            _dbContext.Files.Remove(existingEvent.VideoFile);
+            await _dbContext.SaveChangesAsync();
         }
     }
 }
